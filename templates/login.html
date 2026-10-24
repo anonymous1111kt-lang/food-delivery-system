@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In — QuickBite{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-5 col-md-8">
+            <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <span class="brand-icon mx-auto mb-3" style="width: 52px; height: 52px; font-size: 1.5rem;">
+                        <i class="bi bi-fire"></i>
+                    </span>
+                    <h3 class="fw-bold text-dark">Welcome to QuickBite</h3>
+                    <p class="text-muted small">Sign in to your account to order, manage your restaurant, or deliver meals.</p>
+                </div>
+
+                <!-- Quick Demo Login Pills -->
+                <div class="mb-4 p-3 bg-light rounded-4">
+                    <span class="small fw-bold text-secondary d-block mb-2">⚡ Quick 1-Click Demo Logins:</span>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-dark rounded-pill" 
+                                onclick="fillCreds('admin@quickbite.com', 'admin123')">
+                            <i class="bi bi-shield-lock-fill text-danger me-1"></i> Admin
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-dark rounded-pill" 
+                                onclick="fillCreds('luigi@quickbite.com', 'owner123')">
+                            <i class="bi bi-egg-fried text-warning me-1"></i> Restaurant
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-dark rounded-pill" 
+                                onclick="fillCreds('david.rider@quickbite.com', 'rider123')">
+                            <i class="bi bi-bicycle text-info me-1"></i> Delivery Rider
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-dark rounded-pill" 
+                                onclick="fillCreds('john.doe@example.com', 'customer123')">
+                            <i class="bi bi-person-fill text-primary me-1"></i> Customer
+                        </button>
+                    </div>
+                </div>
+
+                <form action="{{ url_for('login', next=request.args.get('next')) }}" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Email Address</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-envelope"></i></span>
+                            <input type="email" name="email" id="emailInput" class="form-control border-start-0 ps-0" placeholder="name@example.com" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-key"></i></span>
+                            <input type="password" name="password" id="passwordInput" class="form-control border-start-0 ps-0" placeholder="••••••••" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning text-dark fw-bold btn-lg rounded-pill w-100 shadow-sm mb-3">
+                        Sign In <i class="bi bi-arrow-right ms-1"></i>
+                    </button>
+                </form>
+
+                <div class="text-center mt-3">
+                    <p class="text-muted small mb-0">Don't have an account yet? 
+                        <a href="{{ url_for('register') }}" class="text-primary fw-bold text-decoration-none">Create Account</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function fillCreds(email, password) {
+    document.getElementById('emailInput').value = email;
+    document.getElementById('passwordInput').value = password;
+}
+</script>
+{% endblock %}

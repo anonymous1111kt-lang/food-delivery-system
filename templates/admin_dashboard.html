@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Operations Portal — QuickBite{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-danger text-white d-flex align-items-center justify-content-center" style="width: 54px; height: 54px; font-size: 1.5rem;">
+                <i class="bi bi-shield-lock-fill"></i>
+            </div>
+            <div>
+                <h3 class="fw-bold mb-0 text-dark">Admin Operations Portal</h3>
+                <span class="text-muted small">System telemetry, restaurant approvals, user management, and order auditing</span>
+            </div>
+        </div>
+        <button type="button" class="btn btn-warning text-dark fw-bold rounded-pill px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#addRestaurantModal">
+            <i class="bi bi-plus-circle me-1"></i> Add New Restaurant
+        </button>
+    </div>
+
+    <!-- KPI Metric Cards -->
+    <div class="row g-3 mb-5">
+        <div class="col-lg-3 col-sm-6">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small d-block">Platform Gross Volume</span>
+                        <h3 class="fw-bold mb-0 text-success">${{ "%.2f"|format(metrics.gross_volume) }}</h3>
+                    </div>
+                    <div class="stat-icon bg-success-subtle text-success">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small d-block">Total Orders</span>
+                        <h3 class="fw-bold mb-0 text-primary">{{ metrics.total_orders }}</h3>
+                    </div>
+                    <div class="stat-icon bg-primary-subtle text-primary">
+                        <i class="bi bi-receipt"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small d-block">Partner Kitchens</span>
+                        <h3 class="fw-bold mb-0 text-dark">{{ metrics.total_restaurants }}</h3>
+                    </div>
+                    <div class="stat-icon bg-warning-subtle text-warning-emphasis">
+                        <i class="bi bi-shop-window"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small d-block">Registered Users</span>
+                        <h3 class="fw-bold mb-0 text-info">{{ metrics.total_users }}</h3>
+                    </div>
+                    <div class="stat-icon bg-info-subtle text-info">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Management Tabs -->
+    <ul class="nav nav-pills mb-4 gap-2" id="adminTabs" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active rounded-pill px-4" id="orders-tab" data-bs-toggle="pill" data-bs-target="#tab-orders" type="button">
+                <i class="bi bi-receipt me-1"></i> Master Orders Audit ({{ orders|length }})
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link rounded-pill px-4" id="restaurants-tab" data-bs-toggle="pill" data-bs-target="#tab-restaurants" type="button">
+                <i class="bi bi-shop me-1"></i> Restaurants ({{ restaurants|length }})
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link rounded-pill px-4" id="users-tab" data-bs-toggle="pill" data-bs-target="#tab-users" type="button">
+                <i class="bi bi-person-lines-fill me-1"></i> Users Directory ({{ users|length }})
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="adminTabsContent">
+        <!-- 1. Orders Tab -->
+        <div class="tab-pane fade show active" id="tab-orders">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Order ID</th>
+                                    <th>Restaurant</th>
+                                    <th>Customer & Phone</th>
+                                    <th>Courier Partner</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th class="text-end pe-4">Date & Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ord in orders %}
+                                <tr>
+                                    <td class="ps-4 fw-bold">#ORD-{{ ord.order_id }}</td>
+                                    <td><strong class="text-dark">{{ ord.restaurant_name }}</strong></td>
+                                    <td>
+                                        <div class="text-dark">{{ ord.customer_name }}</div>
+                                        <small class="text-muted">{{ ord.customer_phone }}</small>
+                                    </td>
+                                    <td>
+                                        {% if ord.delivery_agent_name %}
+                                        <span class="badge bg-light text-dark border"><i class="bi bi-bicycle me-1"></i>{{ ord.delivery_agent_name }}</span>
+                                        {% else %}
+                                        <span class="text-muted small">Unassigned</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="fw-bold text-primary">${{ "%.2f"|format(ord.total_amount) }}</td>
+                                    <td>
+                                        <span class="badge {% if ord.order_status == 'delivered' %}bg-success{% elif ord.order_status == 'cancelled' %}bg-danger{% elif ord.order_status == 'out_for_delivery' %}bg-info text-white{% else %}bg-warning text-dark{% endif %} rounded-pill px-3">
+                                            {{ ord.order_status|replace('_', ' ')|capitalize }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end pe-4 small text-secondary">
+                                        {{ ord.created_at.strftime('%Y-%m-%d %H:%M') if ord.created_at else '' }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Restaurants Tab -->
+        <div class="tab-pane fade" id="tab-restaurants">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Restaurant</th>
+                                    <th>Cuisine & City</th>
+                                    <th>Owner</th>
+                                    <th>Rating</th>
+                                    <th>Delivery Fee</th>
+                                    <th>Min Order</th>
+                                    <th>Status</th>
+                                    <th class="text-end pe-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for rest in restaurants %}
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="d-flex align-items-center">
+                                            <img src="{{ rest.image_url }}" alt="{{ rest.name }}" class="rounded-3 me-3" style="width: 44px; height: 44px; object-fit: cover;">
+                                            <div>
+                                                <strong class="text-dark">{{ rest.name }}</strong>
+                                                <small class="text-muted d-block">{{ rest.address }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ rest.cuisine_type }} • {{ rest.city }}</td>
+                                    <td>{{ rest.owner_email or 'Admin Managed' }}</td>
+                                    <td><span class="badge bg-success"><i class="bi bi-star-fill text-warning me-1"></i>{{ rest.rating }}</span></td>
+                                    <td>${{ "%.2f"|format(rest.delivery_fee) }}</td>
+                                    <td>${{ "%.2f"|format(rest.minimum_order) }}</td>
+                                    <td>
+                                        <span class="badge {% if rest.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                            {{ 'Active' if rest.is_active else 'Closed' }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <form action="{{ url_for('toggle_restaurant_status', restaurant_id=rest.restaurant_id) }}" method="POST" class="d-inline">
+                                            <button type="submit" class="btn btn-sm {% if rest.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %} rounded-pill px-3">
+                                                {{ 'Deactivate' if rest.is_active else 'Activate' }}
+                                            </button>
+                                        </form>
+                                        <a href="{{ url_for('restaurant_detail', restaurant_id=rest.restaurant_id) }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 ms-1" target="_blank">
+                                            Menu <i class="bi bi-box-arrow-up-right"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Users Tab -->
+        <div class="tab-pane fade" id="tab-users">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">User</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Role</th>
+                                    <th>Address</th>
+                                    <th class="text-end pe-4">Registered Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for u in users %}
+                                <tr>
+                                    <td class="ps-4">
+                                        <strong class="text-dark">{{ u.first_name }} {{ u.last_name }}</strong>
+                                    </td>
+                                    <td>{{ u.email }}</td>
+                                    <td>{{ u.phone }}</td>
+                                    <td>
+                                        <span class="badge {% if u.role == 'admin' %}bg-danger{% elif u.role == 'restaurant_owner' %}bg-warning text-dark{% elif u.role == 'delivery_agent' %}bg-info text-white{% else %}bg-secondary{% endif %} rounded-pill px-3">
+                                            {{ u.role|replace('_', ' ')|capitalize }}
+                                        </span>
+                                    </td>
+                                    <td class="small text-secondary">{{ u.address or 'None specified' }}</td>
+                                    <td class="text-end pe-4 small text-secondary">
+                                        {{ u.created_at.strftime('%Y-%m-%d') if u.created_at else '' }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Add New Restaurant -->
+<div class="modal fade" id="addRestaurantModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Add New Restaurant</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('admin_add_restaurant') }}" method="POST">
+                <div class="modal-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Restaurant Name <span class="text-danger">*</span></label>
+                            <input type="text" name="name" class="form-control rounded-3" placeholder="e.g. Kyoto Sushi House" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Cuisine Type <span class="text-danger">*</span></label>
+                            <input type="text" name="cuisine_type" class="form-control rounded-3" placeholder="e.g. Japanese & Sushi" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Description</label>
+                        <textarea name="description" class="form-control rounded-3" rows="2" placeholder="Briefly describe the restaurant culinary specialty..."></textarea>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Street Address <span class="text-danger">*</span></label>
+                            <input type="text" name="address" class="form-control rounded-3" placeholder="e.g. 500 Market Street" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">City Area</label>
+                            <input type="text" name="city" class="form-control rounded-3" placeholder="Downtown" value="Downtown">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Phone <span class="text-danger">*</span></label>
+                            <input type="text" name="phone" class="form-control rounded-3" placeholder="555-3001" required>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Avg. Delivery Mins</label>
+                            <input type="number" name="delivery_time_mins" class="form-control rounded-3" value="30" min="10">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Delivery Fee ($)</label>
+                            <input type="number" step="0.01" name="delivery_fee" class="form-control rounded-3" value="2.49" min="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Minimum Order ($)</label>
+                            <input type="number" step="0.01" name="minimum_order" class="form-control rounded-3" value="12.00" min="0">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Cover Image URL</label>
+                        <input type="url" name="image_url" class="form-control rounded-3" placeholder="https://images.unsplash.com/...">
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning text-dark fw-bold rounded-pill px-4">Create Restaurant</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

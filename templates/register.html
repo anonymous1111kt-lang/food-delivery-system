@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Create Account — QuickBite{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <span class="brand-icon mx-auto mb-3" style="width: 52px; height: 52px; font-size: 1.5rem;">
+                        <i class="bi bi-person-plus-fill"></i>
+                    </span>
+                    <h3 class="fw-bold text-dark">Join QuickBite</h3>
+                    <p class="text-muted small">Sign up as a customer, register as a restaurant partner, or earn as a delivery driver.</p>
+                </div>
+
+                <form action="{{ url_for('register') }}" method="POST">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
+                            <input type="text" name="first_name" class="form-control rounded-3" placeholder="John" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
+                            <input type="text" name="last_name" class="form-control rounded-3" placeholder="Doe" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Email Address <span class="text-danger">*</span></label>
+                        <input type="email" name="email" class="form-control rounded-3" placeholder="john.doe@example.com" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Password <span class="text-danger">*</span></label>
+                        <input type="password" name="password" class="form-control rounded-3" placeholder="Minimum 6 characters" minlength="6" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Phone Number <span class="text-danger">*</span></label>
+                        <input type="tel" name="phone" class="form-control rounded-3" placeholder="e.g. 555-0199" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Street Address / City</label>
+                        <input type="text" name="address" class="form-control rounded-3" placeholder="e.g. 742 Evergreen Terrace, Apt 4B">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Account Role <span class="text-danger">*</span></label>
+                        <div class="row g-2">
+                            <div class="col-4">
+                                <label class="card p-2 border text-center rounded-3 cursor-pointer h-100">
+                                    <input type="radio" name="role" value="customer" class="form-check-input mx-auto mb-1" checked>
+                                    <small class="fw-bold text-dark d-block">Customer</small>
+                                    <span class="text-muted" style="font-size: 0.7rem;">Order Food</span>
+                                </label>
+                            </div>
+                            <div class="col-4">
+                                <label class="card p-2 border text-center rounded-3 cursor-pointer h-100">
+                                    <input type="radio" name="role" value="restaurant_owner" class="form-check-input mx-auto mb-1">
+                                    <small class="fw-bold text-dark d-block">Restaurant</small>
+                                    <span class="text-muted" style="font-size: 0.7rem;">Manage Menu</span>
+                                </label>
+                            </div>
+                            <div class="col-4">
+                                <label class="card p-2 border text-center rounded-3 cursor-pointer h-100">
+                                    <input type="radio" name="role" value="delivery_agent" class="form-check-input mx-auto mb-1">
+                                    <small class="fw-bold text-dark d-block">Rider</small>
+                                    <span class="text-muted" style="font-size: 0.7rem;">Deliver Food</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning text-dark fw-bold btn-lg rounded-pill w-100 shadow-sm mb-3">
+                        Create My Account
+                    </button>
+                </form>
+
+                <div class="text-center mt-3">
+                    <p class="text-muted small mb-0">Already registered? 
+                        <a href="{{ url_for('login') }}" class="text-primary fw-bold text-decoration-none">Sign In</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

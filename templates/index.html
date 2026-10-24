@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}QuickBite — Crave. Click. Delivered.{% endblock %}
+
+{% block content %}
+<!-- Hero Banner -->
+<section class="hero-section text-center">
+    <div class="container py-2">
+        <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold mb-3 shadow-sm">
+            <i class="bi bi-lightning-charge-fill me-1"></i> Lightning Fast Delivery in 30 Mins
+        </span>
+        <h1 class="display-4 fw-extrabold text-white mb-3">Craving Something Delicious?</h1>
+        <p class="lead text-light opacity-75 mb-4 mx-auto" style="max-width: 650px;">
+            Order from the highest-rated kitchens, authentic artisan pizzerias, and top gourmet chefs delivered straight to your door.
+        </p>
+
+        <!-- Search Form -->
+        <div class="row justify-content-center">
+            <div class="col-lg-8 col-md-10">
+                <form action="{{ url_for('index') }}" method="GET" class="hero-search-box d-flex align-items-center">
+                    <i class="bi bi-search text-muted ms-3 fs-5"></i>
+                    <input type="text" name="q" class="form-control form-control-lg border-0 shadow-none ps-3" 
+                           placeholder="Search for restaurants, cuisines (Pizza, Sushi, Biryani), or dishes..." 
+                           value="{{ search_query }}">
+                    <button type="submit" class="btn btn-warning btn-lg rounded-pill px-4 fw-bold text-dark d-flex align-items-center">
+                        <span>Find Food</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="container mb-5">
+    <!-- Cuisine Categories Slider / Pills -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h5 class="fw-bold mb-0 text-dark">
+            <i class="bi bi-grid-fill text-warning me-2"></i>Explore by Cuisine
+        </h5>
+        {% if selected_category or search_query %}
+        <a href="{{ url_for('index') }}" class="btn btn-sm btn-outline-secondary rounded-pill">
+            <i class="bi bi-x-circle me-1"></i>Reset Filters
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="d-flex gap-2 overflow-x-auto pb-3 mb-4" style="scrollbar-width: thin;">
+        <a href="{{ url_for('index') }}" class="category-pill {% if not selected_category %}active{% endif %}">
+            <i class="bi bi-stars me-1"></i> All Cuisines
+        </a>
+        {% for cat in categories %}
+        <a href="{{ url_for('index', category=cat.name, q=search_query) }}" 
+           class="category-pill {% if selected_category == cat.name %}active{% endif %}">
+            <i class="bi {{ cat.icon }} me-1"></i> {{ cat.name }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- Active Filters Display -->
+    {% if search_query or selected_category %}
+    <div class="alert alert-light border d-flex align-items-center justify-content-between py-2 px-3 rounded-3 mb-4">
+        <div>
+            <span class="text-muted small me-2">Active Filters:</span>
+            {% if selected_category %}
+            <span class="badge bg-warning text-dark me-1"><i class="bi bi-tag-fill me-1"></i>{{ selected_category }}</span>
+            {% endif %}
+            {% if search_query %}
+            <span class="badge bg-secondary me-1"><i class="bi bi-search me-1"></i>"{{ search_query }}"</span>
+            {% endif %}
+        </div>
+        <span class="small text-muted">{{ restaurants|length }} restaurants found</span>
+    </div>
+    {% endif %}
+
+    <!-- Restaurant Catalog Grid -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <h3 class="fw-bold mb-1">Featured Restaurants</h3>
+            <p class="text-muted small mb-0">Handcrafted menus and live prep from verified kitchens</p>
+        </div>
+    </div>
+
+    {% if restaurants %}
+    <div class="row g-4 mb-5">
+        {% for rest in restaurants %}
+        <div class="col-lg-4 col-md-6">
+            <div class="restaurant-card">
+                <div class="restaurant-img-wrapper">
+                    <img src="{{ rest.image_url or 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80' }}" 
+                         alt="{{ rest.name }}" class="restaurant-img" loading="lazy">
+                    <div class="restaurant-time-badge">
+                        <i class="bi bi-clock-fill text-warning me-1"></i> {{ rest.delivery_time_mins }} mins
+                    </div>
+                    <div class="restaurant-rating-badge">
+                        <i class="bi bi-star-fill me-1"></i> {{ rest.rating }}
+                    </div>
+                </div>
+                <div class="p-3 d-flex flex-column flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <h5 class="fw-bold mb-0 text-dark text-truncate" title="{{ rest.name }}">{{ rest.name }}</h5>
+                    </div>
+                    <p class="text-warning-emphasis fw-semibold small mb-2">
+                        <i class="bi bi-egg-fried me-1"></i>{{ rest.cuisine_type }} • {{ rest.city }}
+                    </p>
+                    <p class="text-secondary small mb-3 flex-grow-1" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                        {{ rest.description }}
+                    </p>
+                    <hr class="my-2 border-light-subtle">
+                    <div class="d-flex align-items-center justify-content-between mt-auto pt-1">
+                        <div>
+                            <span class="small text-muted d-block">Delivery Fee: <strong class="text-dark">${{ "%.2f"|format(rest.delivery_fee) }}</strong></span>
+                            <span class="badge bg-light text-secondary border">Min. ${{ "%.2f"|format(rest.minimum_order) }}</span>
+                        </div>
+                        <a href="{{ url_for('restaurant_detail', restaurant_id=rest.restaurant_id) }}" class="btn btn-warning text-dark fw-bold btn-sm px-3 rounded-pill">
+                            View Menu <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5 bg-white rounded-4 border my-4 p-5">
+        <i class="bi bi-emoji-neutral text-muted" style="font-size: 3.5rem;"></i>
+        <h4 class="fw-bold mt-3">No restaurants match your search</h4>
+        <p class="text-muted">Try searching for a different cuisine, dish name, or clear your filters.</p>
+        <a href="{{ url_for('index') }}" class="btn btn-primary rounded-pill px-4">Browse All Restaurants</a>
+    </div>
+    {% endif %}
+
+    <!-- Popular Dishes Section -->
+    {% if popular_items %}
+    <div class="mt-5">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h3 class="fw-bold mb-1">Trending & Popular Dishes</h3>
+                <p class="text-muted small mb-0">Most ordered recipes by our food community</p>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            {% for item in popular_items %}
+            <div class="col-lg-4 col-md-6">
+                <div class="menu-item-card">
+                    <div class="d-flex gap-3">
+                        <img src="{{ item.image_url }}" alt="{{ item.name }}" class="menu-item-img">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                {% if item.dietary_type == 'veg' %}
+                                <span class="badge-veg" title="Vegetarian"><span class="badge-veg-dot"></span></span>
+                                {% elif item.dietary_type == 'vegan' %}
+                                <span class="badge-vegan"><i class="bi bi-flower1 me-1"></i>Vegan</span>
+                                {% else %}
+                                <span class="badge-non-veg" title="Non-Vegetarian"><span class="badge-non-veg-dot"></span></span>
+                                {% endif %}
+                                <h6 class="fw-bold mb-0 text-dark">{{ item.name }}</h6>
+                            </div>
+                            <span class="small text-muted d-block mb-1">by <strong class="text-dark">{{ item.restaurant_name }}</strong></span>
+                            <span class="fw-bold text-primary fs-6">${{ "%.2f"|format(item.price) }}</span>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center">
+                        <span class="small text-muted">{{ item.category_name or 'Special' }}</span>
+                        <a href="{{ url_for('restaurant_detail', restaurant_id=item.restaurant_id) }}" class="btn btn-outline-warning text-dark fw-bold btn-sm rounded-pill px-3">
+                            <i class="bi bi-plus-lg me-1"></i> Order Dish
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

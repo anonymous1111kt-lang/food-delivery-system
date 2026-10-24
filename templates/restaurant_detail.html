@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}{{ restaurant.name }} — QuickBite{% endblock %}
+
+{% block content %}
+<!-- Restaurant Hero Banner -->
+<div class="position-relative bg-dark text-white mb-4" style="background: linear-gradient(rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.85)), url('{{ restaurant.banner_url or restaurant.image_url }}') center/cover no-repeat; padding: 3.5rem 0 3rem 0;">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb small">
+                        <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white-50 text-decoration-none">Restaurants</a></li>
+                        <li class="breadcrumb-item active text-white" aria-current="page">{{ restaurant.name }}</li>
+                    </ol>
+                </nav>
+                <div class="d-flex align-items-center gap-3 mb-2 flex-wrap">
+                    <h1 class="display-5 fw-bold mb-0 text-white">{{ restaurant.name }}</h1>
+                    <span class="badge bg-success fs-6 px-3 py-2 rounded-pill">
+                        <i class="bi bi-star-fill text-warning me-1"></i> {{ restaurant.rating }} Rating
+                    </span>
+                    {% if not restaurant.is_active %}
+                    <span class="badge bg-danger fs-6 px-3 py-2 rounded-pill">Currently Closed</span>
+                    {% endif %}
+                </div>
+                <p class="text-warning fw-semibold mb-2">
+                    <i class="bi bi-shop me-1"></i> {{ restaurant.cuisine_type }} • {{ restaurant.city }}
+                </p>
+                <p class="text-light opacity-75 small mb-3" style="max-width: 650px;">
+                    {{ restaurant.description }}
+                </p>
+                <div class="d-flex flex-wrap gap-4 text-white-50 small">
+                    <div><i class="bi bi-geo-alt-fill text-warning me-1"></i> {{ restaurant.address }}</div>
+                    <div><i class="bi bi-telephone-fill text-warning me-1"></i> {{ restaurant.phone }}</div>
+                    <div><i class="bi bi-clock-fill text-warning me-1"></i> {{ restaurant.delivery_time_mins }} mins delivery</div>
+                    <div><i class="bi bi-truck text-warning me-1"></i> Delivery Fee: ${{ "%.2f"|format(restaurant.delivery_fee) }}</div>
+                    <div><i class="bi bi-cash-stack text-warning me-1"></i> Min Order: ${{ "%.2f"|format(restaurant.minimum_order) }}</div>
+                </div>
+            </div>
+            <div class="col-md-4 text-md-end mt-4 mt-md-0">
+                <img src="{{ restaurant.image_url }}" alt="{{ restaurant.name }}" class="rounded-4 shadow-lg border border-3 border-white" style="width: 140px; height: 140px; object-fit: cover;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <!-- Category & Dietary Filter Toolbar -->
+    <div class="card border-0 shadow-sm rounded-4 p-3 mb-4">
+        <div class="row g-3 align-items-center justify-content-between">
+            <div class="col-md-8">
+                <div class="d-flex gap-2 overflow-x-auto pb-1" style="scrollbar-width: none;">
+                    <a href="{{ url_for('restaurant_detail', restaurant_id=restaurant.restaurant_id) }}" 
+                       class="btn btn-sm {% if not selected_cat_id %}btn-warning fw-bold text-dark{% else %}btn-light text-secondary{% endif %} rounded-pill px-3">
+                        All Items ({{ menu_items|length }})
+                    </a>
+                    {% for cat in categories %}
+                    <a href="{{ url_for('restaurant_detail', restaurant_id=restaurant.restaurant_id, category=cat.category_id) }}" 
+                       class="btn btn-sm {% if selected_cat_id == cat.category_id %}btn-warning fw-bold text-dark{% else %}btn-light text-secondary{% endif %} rounded-pill px-3 text-nowrap">
+                        {{ cat.name }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <div class="btn-group btn-group-sm" role="group">
+                    <a href="{{ url_for('restaurant_detail', restaurant_id=restaurant.restaurant_id, category=selected_cat_id, diet='all') }}" 
+                       class="btn {% if diet_filter == 'all' or not diet_filter %}btn-dark{% else %}btn-outline-secondary{% endif %}">All</a>
+                    <a href="{{ url_for('restaurant_detail', restaurant_id=restaurant.restaurant_id, category=selected_cat_id, diet='veg') }}" 
+                       class="btn {% if diet_filter == 'veg' %}btn-success{% else %}btn-outline-success{% endif %}">Veg</a>
+                    <a href="{{ url_for('restaurant_detail', restaurant_id=restaurant.restaurant_id, category=selected_cat_id, diet='non-veg') }}" 
+                       class="btn {% if diet_filter == 'non-veg' %}btn-danger{% else %}btn-outline-danger{% endif %}">Non-Veg</a>
+                    <a href="{{ url_for('restaurant_detail', restaurant_id=restaurant.restaurant_id, category=selected_cat_id, diet='vegan') }}" 
+                       class="btn {% if diet_filter == 'vegan' %}btn-info text-white{% else %}btn-outline-info{% endif %}">Vegan</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu Items Grid -->
+    <div class="row g-4 mb-5">
+        {% if menu_items %}
+            {% for item in menu_items %}
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-sm rounded-4 h-100 p-3 hover-shadow">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-8">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                {% if item.dietary_type == 'veg' %}
+                                <span class="badge-veg" title="Vegetarian"><span class="badge-veg-dot"></span></span>
+                                {% elif item.dietary_type == 'vegan' %}
+                                <span class="badge-vegan"><i class="bi bi-flower1 me-1"></i>Vegan</span>
+                                {% else %}
+                                <span class="badge-non-veg" title="Non-Vegetarian"><span class="badge-non-veg-dot"></span></span>
+                                {% endif %}
+
+                                {% if item.is_popular %}
+                                <span class="badge bg-warning text-dark small fw-bold"><i class="bi bi-fire me-1"></i>Bestseller</span>
+                                {% endif %}
+                                {% if item.is_spicy %}
+                                <span class="badge bg-danger-subtle text-danger small"><i class="bi bi-lightning-fill"></i> Spicy</span>
+                                {% endif %}
+                            </div>
+                            <h5 class="fw-bold mb-1 text-dark">{{ item.name }}</h5>
+                            <div class="fw-bold text-primary fs-5 mb-2">${{ "%.2f"|format(item.price) }}</div>
+                            <p class="text-muted small mb-0" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                {{ item.description }}
+                            </p>
+                        </div>
+                        <div class="col-4 text-center">
+                            <div class="position-relative d-inline-block">
+                                <img src="{{ item.image_url or 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=80' }}" 
+                                     alt="{{ item.name }}" class="rounded-3 shadow-sm" style="width: 100px; height: 95px; object-fit: cover;">
+                            </div>
+                            <div class="mt-2">
+                                {% if item.status == 'available' %}
+                                <form action="{{ url_for('add_to_cart') }}" method="POST" class="d-flex align-items-center justify-content-center">
+                                    <input type="hidden" name="item_id" value="{{ item.item_id }}">
+                                    <input type="hidden" name="restaurant_id" value="{{ restaurant.restaurant_id }}">
+                                    <input type="hidden" name="quantity" value="1">
+                                    <button type="submit" class="btn btn-warning text-dark fw-bold btn-sm px-3 rounded-pill shadow-sm">
+                                        <i class="bi bi-plus-lg me-1"></i> Add
+                                    </button>
+                                </form>
+                                {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary small">Sold Out</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12 text-center py-5">
+                <i class="bi bi-card-checklist text-muted fs-1"></i>
+                <h5 class="mt-2">No menu items found</h5>
+                <p class="text-muted">There are no dishes matching this filter.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Verified Reviews Section -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 mt-5">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h4 class="fw-bold mb-1">Customer Reviews</h4>
+                <p class="text-muted small mb-0">Verified ratings from satisfied foodies</p>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="fs-4 fw-bold text-success">{{ restaurant.rating }}</span>
+                <div class="text-warning">
+                    <i class="bi bi-star-fill"></i>
+                    <i class="bi bi-star-fill"></i>
+                    <i class="bi bi-star-fill"></i>
+                    <i class="bi bi-star-fill"></i>
+                    <i class="bi bi-star-half"></i>
+                </div>
+            </div>
+        </div>
+
+        {% if reviews %}
+        <div class="row g-3">
+            {% for rev in reviews %}
+            <div class="col-md-6">
+                <div class="p-3 bg-light rounded-3 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold text-dark">{{ rev.first_name }} {{ rev.last_name }}</span>
+                        <div class="badge bg-success">
+                            <i class="bi bi-star-fill text-warning me-1"></i>{{ rev.rating }}.0
+                        </div>
+                    </div>
+                    <p class="small text-secondary mb-1">"{{ rev.comment }}"</p>
+                    <span class="text-muted" style="font-size: 0.75rem;">{{ rev.created_at.strftime('%b %d, %Y') if rev.created_at else 'Recent' }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted small mb-0">No written reviews yet. Be the first to order and review!</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

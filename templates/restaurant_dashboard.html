@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}Restaurant Partner Hub — QuickBite{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    {% if not restaurant %}
+    <div class="alert alert-warning rounded-4 p-4 text-center">
+        <i class="bi bi-shop-window fs-1 mb-2 d-block"></i>
+        <h4 class="fw-bold">No Restaurant Profile Linked</h4>
+        <p class="text-muted mb-3">Your account is registered as a restaurant partner, but no restaurant has been linked to your user profile yet.</p>
+        <p class="small text-secondary">Contact the administrator or sign in with <code>luigi@quickbite.com</code> (password: <code>owner123</code>) to view the pre-configured kitchen.</p>
+    </div>
+    {% else %}
+    <!-- Restaurant Header & KPIs -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <img src="{{ restaurant.image_url }}" alt="{{ restaurant.name }}" class="rounded-4" style="width: 70px; height: 70px; object-fit: cover;">
+                <div>
+                    <div class="d-flex align-items-center gap-2">
+                        <h3 class="fw-bold mb-0 text-dark">{{ restaurant.name }}</h3>
+                        <span class="badge {% if restaurant.is_active %}bg-success{% else %}bg-danger{% endif %} rounded-pill px-3">
+                            {{ 'Open for Orders' if restaurant.is_active else 'Kitchen Closed' }}
+                        </span>
+                    </div>
+                    <span class="text-muted small">{{ restaurant.cuisine_type }} • {{ restaurant.address }}, {{ restaurant.city }}</span>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <form action="{{ url_for('toggle_restaurant_status', restaurant_id=restaurant.restaurant_id) }}" method="POST">
+                    <button type="submit" class="btn btn-sm {% if restaurant.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %} rounded-pill px-3">
+                        <i class="bi bi-power me-1"></i> {{ 'Close Kitchen' if restaurant.is_active else 'Open Kitchen' }}
+                    </button>
+                </form>
+                <a href="{{ url_for('menu_item_create', restaurant_id=restaurant.restaurant_id) }}" class="btn btn-warning text-dark fw-bold btn-sm rounded-pill px-3">
+                    <i class="bi bi-plus-lg me-1"></i> Add Menu Item
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Metric Cards -->
+    <div class="row g-3 mb-5">
+        <div class="col-md-3 col-6">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small d-block">Active Orders</span>
+                        <h3 class="fw-bold mb-0 text-dark">{{ active_orders|length }}</h3>
+                    </div>
+                    <div class="stat-icon bg-warning-subtle text-warning-emphasis">
+                        <i class="bi bi-bell-fill"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small d-block">Total Orders</span>
+                        <h3 class="fw-bold mb-0 text-dark">{{ total_orders_count }}</h3>
+                    </div>
+                    <div class="stat-icon bg-primary-subtle text-primary">
+                        <i class="bi bi-receipt"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small d-block">Gross Revenue</span>
+                        <h3 class="fw-bold mb-0 text-success">${{ "%.2f"|format(revenue) }}</h3>
+                    </div>
+                    <div class="stat-icon bg-success-subtle text-success">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small d-block">Menu Dishes</span>
+                        <h3 class="fw-bold mb-0 text-dark">{{ menu_items|length }}</h3>
+                    </div>
+                    <div class="stat-icon bg-info-subtle text-info">
+                        <i class="bi bi-egg-fried"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Orders Queue -->
+    <div class="card border-0 shadow-sm rounded-4 mb-5 overflow-hidden">
+        <div class="card-header bg-white border-bottom p-3 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0 text-dark">
+                <i class="bi bi-stopwatch-fill text-warning me-2"></i>Live Kitchen Queue ({{ active_orders|length }})
+            </h5>
+            <small class="text-muted">Orders requiring kitchen preparation or dispatch</small>
+        </div>
+        <div class="card-body p-0">
+            {% if active_orders %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Order ID</th>
+                            <th>Customer & Address</th>
+                            <th>Dishes Ordered</th>
+                            <th>Total</th>
+                            <th>Current Status</th>
+                            <th class="text-end pe-4">Kitchen Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ord in active_orders %}
+                        <tr>
+                            <td class="ps-4 fw-bold">#ORD-{{ ord.order_id }}</td>
+                            <td>
+                                <strong class="text-dark">{{ ord.customer_name }}</strong>
+                                <small class="text-muted d-block">{{ ord.delivery_address }}</small>
+                                <small class="text-secondary">Tel: {{ ord.customer_phone }}</small>
+                            </td>
+                            <td>
+                                <div class="small fw-semibold text-dark">{{ ord.items_summary }}</div>
+                                {% if ord.special_instructions %}
+                                <div class="small text-danger fst-italic">Note: {{ ord.special_instructions }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="fw-bold text-primary">${{ "%.2f"|format(ord.total_amount) }}</td>
+                            <td>
+                                {% if ord.order_status == 'placed' %}
+                                <span class="badge bg-warning text-dark">Placed</span>
+                                {% elif ord.order_status == 'confirmed' %}
+                                <span class="badge bg-primary">Confirmed</span>
+                                {% elif ord.order_status == 'preparing' %}
+                                <span class="badge bg-info text-white">Cooking</span>
+                                {% elif ord.order_status == 'out_for_delivery' %}
+                                <span class="badge bg-success">Out for Delivery</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-4">
+                                <form action="{{ url_for('update_order_status', order_id=ord.order_id) }}" method="POST" class="d-inline">
+                                    {% if ord.order_status == 'placed' %}
+                                    <input type="hidden" name="new_status" value="confirmed">
+                                    <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3">
+                                        Accept & Confirm
+                                    </button>
+                                    {% elif ord.order_status == 'confirmed' %}
+                                    <input type="hidden" name="new_status" value="preparing">
+                                    <button type="submit" class="btn btn-sm btn-warning text-dark fw-bold rounded-pill px-3">
+                                        <i class="bi bi-fire me-1"></i> Start Cooking
+                                    </button>
+                                    {% elif ord.order_status == 'preparing' %}
+                                    <input type="hidden" name="new_status" value="out_for_delivery">
+                                    <button type="submit" class="btn btn-sm btn-success rounded-pill px-3">
+                                        <i class="bi bi-bicycle me-1"></i> Dispatch Rider
+                                    </button>
+                                    {% elif ord.order_status == 'out_for_delivery' %}
+                                    <input type="hidden" name="new_status" value="delivered">
+                                    <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-3">
+                                        Mark Delivered
+                                    </button>
+                                    {% endif %}
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-check2-circle text-success fs-1"></i>
+                <p class="text-muted mt-2 mb-0">No active orders in the queue right now. Great job!</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Menu Item Management Table -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom p-3 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0 text-dark">
+                <i class="bi bi-menu-button-wide-fill text-warning me-2"></i>Menu Inventory ({{ menu_items|length }})
+            </h5>
+            <a href="{{ url_for('menu_item_create', restaurant_id=restaurant.restaurant_id) }}" class="btn btn-warning text-dark fw-bold btn-sm rounded-pill px-3">
+                <i class="bi bi-plus-lg me-1"></i> Add Dish
+            </a>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Dish</th>
+                            <th>Category</th>
+                            <th>Dietary</th>
+                            <th>Price</th>
+                            <th>Status</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in menu_items %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ item.image_url }}" alt="{{ item.name }}" class="rounded-3 me-3" style="width: 44px; height: 44px; object-fit: cover;">
+                                    <div>
+                                        <strong class="text-dark">{{ item.name }}</strong>
+                                        {% if item.is_popular %}
+                                        <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">Bestseller</span>
+                                        {% endif %}
+                                        <small class="text-muted d-block text-truncate" style="max-width: 250px;">{{ item.description }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="badge bg-light text-dark border">{{ item.category_name or 'Uncategorized' }}</span></td>
+                            <td>
+                                {% if item.dietary_type == 'veg' %}
+                                <span class="badge bg-success-subtle text-success">Veg</span>
+                                {% elif item.dietary_type == 'vegan' %}
+                                <span class="badge bg-info-subtle text-info">Vegan</span>
+                                {% else %}
+                                <span class="badge bg-danger-subtle text-danger">Non-Veg</span>
+                                {% endif %}
+                            </td>
+                            <td class="fw-bold text-dark">${{ "%.2f"|format(item.price) }}</td>
+                            <td>
+                                <form action="{{ url_for('toggle_menu_item_status', item_id=item.item_id) }}" method="POST">
+                                    <button type="submit" class="btn btn-sm {% if item.status == 'available' %}btn-success{% else %}btn-secondary{% endif %} rounded-pill px-2 py-0" style="font-size: 0.75rem;">
+                                        {{ 'In Stock' if item.status == 'available' else 'Out of Stock' }}
+                                    </button>
+                                </form>
+                            </td>
+                            <td class="text-end pe-4">
+                                <a href="{{ url_for('menu_item_edit', item_id=item.item_id) }}" class="btn btn-sm btn-outline-secondary rounded-circle px-2 py-1 me-1" title="Edit Item">
+                                    <i class="bi bi-pencil-fill"></i>
+                                </a>
+                                <form action="{{ url_for('menu_item_delete', item_id=item.item_id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this menu item?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle px-2 py-1" title="Delete Item">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

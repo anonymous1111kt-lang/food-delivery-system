@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Track Order #ORD-{{ order.order_id }} — QuickBite{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb small mb-1">
+                    <li class="breadcrumb-item"><a href="{{ url_for('my_orders') }}">My Orders</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Track #ORD-{{ order.order_id }}</li>
+                </ol>
+            </nav>
+            <h2 class="fw-bold mb-0">Live Order Tracker</h2>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill">
+                Placed on {{ order.created_at.strftime('%b %d, %Y at %I:%M %p') if order.created_at else '' }}
+            </span>
+            {% if order.order_status in ['placed', 'confirmed'] %}
+            <form action="{{ url_for('cancel_order', order_id=order.order_id) }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel this order?');">
+                <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                    <i class="bi bi-x-circle me-1"></i> Cancel Order
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Live Status Tracker Card -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 mb-4">
+        {% if order.order_status == 'cancelled' %}
+        <div class="alert alert-danger rounded-4 py-3 px-4 d-flex align-items-center mb-0">
+            <i class="bi bi-x-octagon-fill fs-2 me-3"></i>
+            <div>
+                <h5 class="fw-bold mb-1">Order Cancelled</h5>
+                <p class="mb-0 small">This order has been cancelled. Any processed payment will be refunded to your source payment method within 3-5 business days.</p>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center mb-4">
+            <span class="badge bg-warning-subtle text-warning-emphasis fw-bold px-3 py-2 rounded-pill fs-6 mb-2">
+                <span class="spinner-grow spinner-grow-sm me-1" role="status"></span> Live Update
+            </span>
+            <h3 class="fw-bold text-dark mb-1">
+                {% if order.order_status == 'placed' %}Order Placed & Awaiting Restaurant Confirmation
+                {% elif order.order_status == 'confirmed' %}Order Confirmed by Restaurant
+                {% elif order.order_status == 'preparing' %}Chef is Preparing Your Food
+                {% elif order.order_status == 'out_for_delivery' %}Rider is Out for Delivery!
+                {% elif order.order_status == 'delivered' %}Delivered! Enjoy Your Food 🎉
+                {% endif %}
+            </h3>
+            <p class="text-muted small">Estimated Delivery: ~{{ order.delivery_time_mins or 30 }} Minutes from order time</p>
+        </div>
+
+        <!-- 5-Stage Stepper -->
+        {% set status_order = ['placed', 'confirmed', 'preparing', 'out_for_delivery', 'delivered'] %}
+        {% set current_idx = status_order.index(order.order_status) if order.order_status in status_order else 0 %}
+        
+        <div class="order-stepper position-relative mx-auto my-5" style="max-width: 720px;">
+            <div class="stepper-progress" style="width: {{ (current_idx / (status_order|length - 1)) * 95 }}%;"></div>
+
+            <!-- Step 1: Placed -->
+            <div class="step-node {% if current_idx > 0 %}completed{% elif current_idx == 0 %}active{% endif %}">
+                <div class="step-circle"><i class="bi bi-receipt"></i></div>
+                <div class="step-label">Placed</div>
+            </div>
+
+            <!-- Step 2: Confirmed -->
+            <div class="step-node {% if current_idx > 1 %}completed{% elif current_idx == 1 %}active{% endif %}">
+                <div class="step-circle"><i class="bi bi-check-circle"></i></div>
+                <div class="step-label">Confirmed</div>
+            </div>
+
+            <!-- Step 3: Preparing -->
+            <div class="step-node {% if current_idx > 2 %}completed{% elif current_idx == 2 %}active{% endif %}">
+                <div class="step-circle"><i class="bi bi-fire"></i></div>
+                <div class="step-label">Cooking</div>
+            </div>
+
+            <!-- Step 4: Out for Delivery -->
+            <div class="step-node {% if current_idx > 3 %}completed{% elif current_idx == 3 %}active{% endif %}">
+                <div class="step-circle"><i class="bi bi-bicycle"></i></div>
+                <div class="step-label">On Way</div>
+            </div>
+
+            <!-- Step 5: Delivered -->
+            <div class="step-node {% if current_idx >= 4 %}completed{% endif %}">
+                <div class="step-circle"><i class="bi bi-house-heart"></i></div>
+                <div class="step-label">Delivered</div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Delivery Partner Information Banner -->
+        {% if order.delivery_agent_name and order.order_status in ['out_for_delivery', 'delivered'] %}
+        <div class="card bg-info-subtle border-0 rounded-4 p-3 mt-4">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-info text-white d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; font-size: 1.3rem;">
+                        <i class="bi bi-bicycle"></i>
+                    </div>
+                    <div>
+                        <span class="small text-muted d-block">Delivery Partner</span>
+                        <h6 class="fw-bold mb-0 text-dark">{{ order.delivery_agent_name }}</h6>
+                        <small class="text-secondary">Phone: {{ order.delivery_agent_phone or '555-0150' }}</small>
+                    </div>
+                </div>
+                <span class="badge bg-success px-3 py-2 rounded-pill">
+                    <i class="bi bi-shield-check me-1"></i> Temperature Checked
+                </span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Order Items & Invoice Breakdown -->
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 p-4">
+                <h5 class="fw-bold mb-3 text-dark">Ordered Items</h5>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Item</th>
+                                <th class="text-center">Qty</th>
+                                <th>Unit Price</th>
+                                <th class="text-end">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                            <tr>
+                                <td class="fw-semibold text-dark">{{ item.item_name }}</td>
+                                <td class="text-center">{{ item.quantity }}</td>
+                                <td>${{ "%.2f"|format(item.unit_price) }}</td>
+                                <td class="text-end fw-bold text-dark">${{ "%.2f"|format(item.subtotal) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 p-4">
+                <h5 class="fw-bold mb-3 text-dark">Delivery Info</h5>
+                <div class="mb-3">
+                    <span class="small text-muted d-block">Restaurant</span>
+                    <strong class="text-dark">{{ order.restaurant_name }}</strong>
+                    <div class="small text-secondary">{{ order.restaurant_address }}</div>
+                </div>
+                <div class="mb-3">
+                    <span class="small text-muted d-block">Deliver To</span>
+                    <strong class="text-dark">{{ order.customer_name }}</strong>
+                    <div class="small text-secondary">{{ order.delivery_address }}</div>
+                    <div class="small text-secondary">Phone: {{ order.customer_phone }}</div>
+                </div>
+                {% if order.special_instructions %}
+                <div class="mb-3">
+                    <span class="small text-muted d-block">Special Instructions</span>
+                    <div class="small text-dark fst-italic">"{{ order.special_instructions }}"</div>
+                </div>
+                {% endif %}
+
+                <hr class="my-3">
+                <div class="d-flex justify-content-between mb-1 small">
+                    <span class="text-muted">Items Subtotal</span>
+                    <span class="fw-semibold">${{ "%.2f"|format(order.subtotal) }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1 small">
+                    <span class="text-muted">Delivery Fee</span>
+                    <span class="fw-semibold">${{ "%.2f"|format(order.delivery_fee) }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2 small">
+                    <span class="text-muted">Taxes</span>
+                    <span class="fw-semibold">${{ "%.2f"|format(order.tax_amount) }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                    <span class="fw-bold fs-5">Total Paid</span>
+                    <span class="fw-bold fs-4 text-primary">${{ "%.2f"|format(order.total_amount) }}</span>
+                </div>
+                <div class="text-muted small mt-2">
+                    Paid via <span class="badge bg-light text-dark border text-uppercase">{{ order.payment_method|replace('_', ' ') }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
